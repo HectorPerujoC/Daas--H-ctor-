@@ -4,7 +4,7 @@ on:
   schedule:
     # Se ejecuta todos los días a las 06:00 AM UTC
     - cron: '0 6 * * *'
-  workflow_dispatch: # Nos permite añadir un botón para probarlo a mano cuando queramos
+  workflow_dispatch: # Nos permite añadir un botón para probarlo a mano
 
 jobs:
   extraer-datos:
@@ -33,4 +33,5 @@ jobs:
         git config --global user.email "robot@tu-api.com"
         git add subastas_madrid_limpias.json
         git commit -m "Actualización DaaS automática: Nuevos inmuebles del BOE" || exit 0
+        git pull --rebase origin main
         git push 
