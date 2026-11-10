@@ -1,20 +1,22 @@
 from fastapi import FastAPI
 import json
+import os
 
-# 1. Creamos la aplicación (tu "tienda" virtual)
-app = FastAPI()
+app = FastAPI(title="Radar de Subastas Inmobiliarias DaaS")
 
-# 2. Creamos la puerta principal (la ruta de bienvenida)
 @app.get("/")
 def bienvenida():
-    return {"mensaje": "¡Hola! Esta es mi primera API comercial."}
+    return {"mensaje": "API Inmobiliaria Activa. Visita /subastas/madrid para obtener el JSON depurado, o /docs para ver el panel de control."}
 
-# 3. Creamos el escaparate de los datos
-@app.get("/citas")
-def entregar_datos():
-    # Leemos el archivo JSON que creaste en el paso anterior
-    with open("datos_limpios.json", "r", encoding="utf-8") as archivo:
-        datos_guardados = json.load(archivo)
+@app.get("/subastas/madrid")
+def entregar_subastas_madrid():
+    # AHORA APUNTAMOS AL ARCHIVO DEPURADO POR EL LIMPIADOR
+    nombre_archivo = "subastas_madrid_limpias.json"
     
-    # Se los entregamos a quien visite esta URL
-    return datos_guardados
+    if not os.path.exists(nombre_archivo):
+        return {"error": f"Aún no se ha generado la base de datos. Se buscó el archivo: {nombre_archivo}"}
+        
+    with open(nombre_archivo, "r", encoding="utf-8") as archivo:
+        datos_guardados = json.load(archivo)
+        
+    return datos_guardados  
