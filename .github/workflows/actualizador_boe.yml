@@ -1,14 +1,14 @@
-name: Actualizador Diario del BOE
+name: Actualizador Diario del BOE Nacional
 
 on:
   schedule:
     # Se ejecuta todos los días a las 06:00 AM UTC
     - cron: '0 6 * * *'
-  workflow_dispatch: # Nos permite añadir un botón para probarlo a mano
+  workflow_dispatch: # Botón manual de emergencia
 
 jobs:
   extraer-datos:
-    runs-on: ubuntu-latest # GitHub nos presta una máquina Linux gratuita
+    runs-on: ubuntu-latest
 
     steps:
     - name: 1. Descargar el código de tu repositorio
@@ -19,19 +19,19 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: 3. Instalar dependencias (Pandas, Requests, BeautifulSoup)
+    - name: 3. Instalar dependencias
       run: |
         python -m pip install --upgrade pip
         pip install requests beautifulsoup4 pandas
 
-    - name: 4. Encender el motor principal (Rastreo, Limpieza y JSON)
+    - name: 4. Encender el motor principal (Rastreo Nacional)
       run: python motor_principal.py
 
     - name: 5. Sobrescribir JSON y enviar a producción
       run: |
         git config --global user.name "Robot Automático DaaS"
         git config --global user.email "robot@tu-api.com"
-        git add subastas_madrid_limpias.json
-        git commit -m "Actualización DaaS automática: Nuevos inmuebles del BOE" || exit 0
+        git add subastas_nacionales.json
+        git commit -m "Actualización DaaS Nacional: Nuevos inmuebles de madrugada" || exit 0
         git pull --rebase origin main
         git push 
