@@ -2,7 +2,7 @@ name: Actualizador Diario del BOE Nacional
 
 on:
   schedule:
-    # Se ejecuta todos los días a las 06:00 AM UTC
+    # Se ejecuta todos los días a las 04:00 AM UTC
     - cron: '0 4 * * *'
   workflow_dispatch: # Botón manual de emergencia
 
@@ -27,11 +27,11 @@ jobs:
     - name: 4. Encender el motor principal (Rastreo Nacional)
       run: python motor_principal.py
 
-    - name: 5. Sobrescribir JSON y enviar a producción
+    - name: 5. Sobrescribir JSON, Base de Datos y enviar a producción
       run: |
         git config --global user.name "Robot Automático DaaS"
         git config --global user.email "robot@tu-api.com"
-        git add subastas_nacionales.json
-        git commit -m "Actualización DaaS Nacional: Nuevos inmuebles de madrugada" || exit 0
+        git add subastas_nacionales.json historico_subastas.db
+        git commit -m "Actualización DaaS Nacional: JSON y SQLite de madrugada" || exit 0
         git pull --rebase origin main
-        git push  
+        git push

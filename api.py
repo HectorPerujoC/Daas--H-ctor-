@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Query
-import json
+import sqlite3
 import os
 import unicodedata
 from typing import Optional
@@ -16,7 +16,7 @@ def normalizar(texto: str) -> str:
 
 @app.get("/")
 def bienvenida():
-    return {"mensaje": "API Inmobiliaria Nacional Activa. Visita /docs para el panel interactivo."}
+    return {"mensaje": "API Inmobiliaria Nacional Activa conectada al Histórico. Visita /docs para el panel interactivo."}
 
 @app.get("/subastas")
 def buscar_subastas(
@@ -28,17 +28,32 @@ def buscar_subastas(
     tipo_inmueble: Optional[str] = Query(None, description="Ej: VIVIENDA, GARAJE, LOCAL"),
     origen: Optional[str] = Query(None, description="Ej: Judicial, AEAT, Recaudacion"),
     ticket_bajo: Optional[bool] = Query(False, description="Muestra solo inmuebles con valor <= 50.000€"),
+    ultimas_24h: Optional[bool] = Query(False, description="Mostrar solo subastas capturadas en las últimas 24 horas"),
     ordenar_por: Optional[str] = Query("precio", description="Opciones: precio, deposito"),
     orden: Optional[str] = Query("asc", description="Opciones: asc, desc")
 ):
-    nombre_archivo = "subastas_nacionales.json" 
+    nombre_db = "historico_subastas.db" 
     
-    if not os.path.exists(nombre_archivo):
-        return {"error": f"Base de datos no encontrada. Se buscó: {nombre_archivo}"}
+    if not os.path.exists(nombre_db):
+        return {"error": f"Base de datos no encontrada. Se buscó: {nombre_db}"}
         
-    with open(nombre_archivo, "r", encoding="utf-8") as archivo:
-        resultados = json.load(archivo)
+    # --- CONEXIÓN AL CEREBRO SQLITE ---
+    conn = sqlite3.connect(nombre_db)
+    conn.row_factory = sqlite3.Row # Permite acceder a las columnas por nombre
+    cursor = conn.cursor()
+    
+    # Filtro nativo ultra-rápido en base de datos para novedades
+    if ultimas_24h:
+        cursor.execute("SELECT * FROM subastas WHERE Fecha_Captura >= date('now', '-1 day')")
+    else:
+        cursor.execute("SELECT * FROM subastas")
+        
+    # Convertimos los resultados a una lista de diccionarios para el motor de Python
+    resultados = [dict(row) for row in cursor.fetchall()]
+    conn.close()
 
+    # --- MOTOR DE FILTRADO EN MEMORIA (El mismo que ya dominas) ---
+    
     # 1. Atajo "Ticket Bajo"
     if ticket_bajo:
         resultados = [s for s in resultados if s.get("Valor_Num") is not None and s.get("Valor_Num") <= 50000]
@@ -53,7 +68,7 @@ def buscar_subastas(
     if deposito_max is not None:
         resultados = [s for s in resultados if s.get("Deposito_Num") is not None and s.get("Deposito_Num") <= deposito_max]
         
-    # 4. Filtro por Tipo de Inmueble, Origen y Localidad (Conectados al nuevo motor)
+    # 4. Filtro por Tipo de Inmueble, Origen y Localidad
     if tipo_inmueble is not None:
         resultados = [s for s in resultados if normalizar(tipo_inmueble) in normalizar(s.get("Bien_Tipo", ""))]
     if origen is not None:
@@ -61,7 +76,7 @@ def buscar_subastas(
     if localidad is not None:
         resultados = [s for s in resultados if normalizar(localidad) in normalizar(s.get("Localidad", ""))]
         
-    # 5. Filtro por Provincia (Búsqueda insensible a tildes)
+    # 5. Filtro por Provincia
     if provincia is not None:
         prov_busqueda = normalizar(provincia)
         resultados = [s for s in resultados if prov_busqueda in normalizar(s.get("Provincia", "")) or prov_busqueda in normalizar(str(s))]
