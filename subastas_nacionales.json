@@ -195,6 +195,10 @@
         "Deposito_Num":24252.68
     },
     {
+<<<<<<< HEAD
+=======
+        "Provincia":"Alicante",
+>>>>>>> dd95c391061f2bcfed78b11f3409b056ce786261
         "Identificador":"SUB-JA-2025-250498",
         "Provincia":"Alicante",
         "Origen":"JUDICIAL EN VÍA DE APREMIO",
@@ -1131,6 +1135,10 @@
         "Deposito_Num":1185.9
     },
     {
+<<<<<<< HEAD
+=======
+        "Provincia":"Almería",
+>>>>>>> dd95c391061f2bcfed78b11f3409b056ce786261
         "Identificador":"SUB-JA-2026-261547",
         "Provincia":"Almería",
         "Origen":"JUDICIAL EN VÍA DE APREMIO",
@@ -1612,6 +1620,10 @@
         "Deposito_Num":81500.0
     },
     {
+<<<<<<< HEAD
+=======
+        "Provincia":"Barcelona",
+>>>>>>> dd95c391061f2bcfed78b11f3409b056ce786261
         "Identificador":"SUB-JA-2026-265065",
         "Provincia":"Barcelona",
         "Origen":"JUDICIAL EN VÍA DE APREMIO",
@@ -2899,6 +2911,10 @@
         "Deposito_Num":651.33
     },
     {
+<<<<<<< HEAD
+=======
+        "Provincia":"Cádiz",
+>>>>>>> dd95c391061f2bcfed78b11f3409b056ce786261
         "Identificador":"SUB-AT-2026-26R2886001506",
         "Provincia":"Cádiz",
         "Origen":"AGENCIA TRIBUTARIA",
@@ -4823,6 +4839,10 @@
         "Deposito_Num":10449.32
     },
     {
+<<<<<<< HEAD
+=======
+        "Provincia":"Jaén",
+>>>>>>> dd95c391061f2bcfed78b11f3409b056ce786261
         "Identificador":"SUB-AT-2026-26R4586001076",
         "Provincia":"Jaén",
         "Origen":"AGENCIA TRIBUTARIA",
@@ -6188,6 +6208,10 @@
         "Deposito_Num":31239.3
     },
     {
+<<<<<<< HEAD
+=======
+        "Provincia":"Málaga",
+>>>>>>> dd95c391061f2bcfed78b11f3409b056ce786261
         "Identificador":"SUB-JA-2026-267479",
         "Provincia":"Málaga",
         "Origen":"JUDICIAL EN VÍA DE APREMIO",
@@ -6708,6 +6732,10 @@
         "Deposito_Num":8400.0
     },
     {
+<<<<<<< HEAD
+=======
+        "Provincia":"Murcia",
+>>>>>>> dd95c391061f2bcfed78b11f3409b056ce786261
         "Identificador":"SUB-JA-2026-258209",
         "Provincia":"Murcia",
         "Origen":"JUDICIAL EN VÍA DE APREMIO",
@@ -7189,6 +7217,10 @@
         "Deposito_Num":5777.3
     },
     {
+<<<<<<< HEAD
+=======
+        "Provincia":"Navarra",
+>>>>>>> dd95c391061f2bcfed78b11f3409b056ce786261
         "Identificador":"SUB-RC-2026-3100200103036",
         "Provincia":"Navarra",
         "Origen":"RECAUDACIÓN TRIBUTARIA",
@@ -7488,6 +7520,10 @@
         "Deposito_Num":6360.0
     },
     {
+<<<<<<< HEAD
+=======
+        "Provincia":"Las Palmas",
+>>>>>>> dd95c391061f2bcfed78b11f3409b056ce786261
         "Identificador":"SUB-JA-2026-264829",
         "Provincia":"Las Palmas",
         "Origen":"JUDICIAL EN VÍA DE APREMIO",
@@ -7657,6 +7693,10 @@
         "Deposito_Num":8686.08
     },
     {
+<<<<<<< HEAD
+=======
+        "Provincia":"Pontevedra",
+>>>>>>> dd95c391061f2bcfed78b11f3409b056ce786261
         "Identificador":"SUB-JA-2026-267618",
         "Provincia":"Pontevedra",
         "Origen":"JUDICIAL EN VÍA DE APREMIO",
@@ -7709,6 +7749,10 @@
         "Deposito_Num":15132.9
     },
     {
+<<<<<<< HEAD
+=======
+        "Provincia":"Salamanca",
+>>>>>>> dd95c391061f2bcfed78b11f3409b056ce786261
         "Identificador":"SUB-JA-2026-267558",
         "Provincia":"Salamanca",
         "Origen":"JUDICIAL EN VÍA DE APREMIO",
@@ -7930,6 +7974,10 @@
         "Deposito_Num":5180.0
     },
     {
+<<<<<<< HEAD
+=======
+        "Provincia":"Cantabria",
+>>>>>>> dd95c391061f2bcfed78b11f3409b056ce786261
         "Identificador":"SUB-JA-2026-267085",
         "Provincia":"Cantabria",
         "Origen":"JUDICIAL EN VÍA DE APREMIO",
