@@ -34,4 +34,4 @@ jobs:
         git add subastas_nacionales.json
         git commit -m "Actualización DaaS Nacional: Nuevos inmuebles de madrugada" || exit 0
         git pull --rebase origin main
-        git push 
+        git push  

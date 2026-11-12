@@ -1,9 +1,18 @@
 from fastapi import FastAPI, Query
 import json
 import os
+import unicodedata
 from typing import Optional
 
 app = FastAPI(title="Radar de Subastas Inmobiliarias DaaS")
+
+def normalizar(texto: str) -> str:
+    """Elimina tildes y convierte a mayúsculas para búsquedas flexibles."""
+    if not texto:
+        return ""
+    texto_norm = unicodedata.normalize('NFD', str(texto))
+    sin_tildes = ''.join(c for c in texto_norm if unicodedata.category(c) != 'Mn')
+    return sin_tildes.upper()
 
 @app.get("/")
 def bienvenida():
@@ -11,7 +20,8 @@ def bienvenida():
 
 @app.get("/subastas")
 def buscar_subastas(
-    provincia: Optional[str] = Query(None, description="Ej: Alicante, Barcelona, Almería"),
+    provincia: Optional[str] = Query(None, description="Ej: Alicante, Barcelona, Almeria, Madrid"),
+    localidad: Optional[str] = Query(None, description="Ej: Marbella, Elche, Alcalá"),
     precio_min: Optional[float] = Query(None, description="Valor mínimo de subasta"),
     precio_max: Optional[float] = Query(None, description="Valor máximo de subasta"),
     deposito_max: Optional[float] = Query(None, description="Depósito máximo exigido"),
@@ -29,7 +39,7 @@ def buscar_subastas(
     with open(nombre_archivo, "r", encoding="utf-8") as archivo:
         resultados = json.load(archivo)
 
-    # 1. Atajo comercial: "Ticket Bajo"
+    # 1. Atajo "Ticket Bajo"
     if ticket_bajo:
         resultados = [s for s in resultados if s.get("Valor_Num") is not None and s.get("Valor_Num") <= 50000]
 
@@ -43,15 +53,18 @@ def buscar_subastas(
     if deposito_max is not None:
         resultados = [s for s in resultados if s.get("Deposito_Num") is not None and s.get("Deposito_Num") <= deposito_max]
         
-    # 4. Filtro por Tipo de Inmueble y Origen (Búsqueda en la columna Tipo)
+    # 4. Filtro por Tipo de Inmueble, Origen y Localidad (Conectados al nuevo motor)
     if tipo_inmueble is not None:
-        resultados = [s for s in resultados if tipo_inmueble.upper() in str(s.get("Tipo", "")).upper()]
+        resultados = [s for s in resultados if normalizar(tipo_inmueble) in normalizar(s.get("Bien_Tipo", ""))]
     if origen is not None:
-        resultados = [s for s in resultados if origen.upper() in str(s.get("Tipo", "")).upper()]
+        resultados = [s for s in resultados if normalizar(origen) in normalizar(s.get("Origen", ""))]
+    if localidad is not None:
+        resultados = [s for s in resultados if normalizar(localidad) in normalizar(s.get("Localidad", ""))]
         
-    # 5. Filtro por Provincia (Búsqueda en todo el registro)
+    # 5. Filtro por Provincia (Búsqueda insensible a tildes)
     if provincia is not None:
-        resultados = [s for s in resultados if provincia.upper() in str(s).upper()]
+        prov_busqueda = normalizar(provincia)
+        resultados = [s for s in resultados if prov_busqueda in normalizar(s.get("Provincia", "")) or prov_busqueda in normalizar(str(s))]
 
     # 6. Ordenación Dinámica
     reverso = True if orden.lower() == "desc" else False

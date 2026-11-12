@@ -2,20 +2,26 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import time
+import re
 from urllib.parse import urljoin
 
 BASE_URL = "https://subastas.boe.es/"
 FORM_URL = urljoin(BASE_URL, "subastas_ava.php")
 
-# --- LISTA NACIONAL DE PROVINCIAS (52 CÓDIGOS BOE) ---
-PROVINCIAS_A_RASTREAR = [
-    "01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
-    "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
-    "21", "22", "23", "24", "25", "26", "27", "28", "29", "30",
-    "31", "32", "33", "34", "35", "36", "37", "38", "39", "40",
-    "41", "42", "43", "44", "45", "46", "47", "48", "49", "50",
-    "51", "52"
-]
+# Mapa oficial de provincias del BOE (Códigos 01 a 52)
+PROVINCIAS_BOE = {
+    "01": "Álava", "02": "Albacete", "03": "Alicante", "04": "Almería", "05": "Ávila",
+    "06": "Badajoz", "07": "Balears (Illes)", "08": "Barcelona", "09": "Burgos", "10": "Cáceres",
+    "11": "Cádiz", "12": "Castellón", "13": "Ciudad Real", "14": "Córdoba", "15": "A Coruña",
+    "16": "Cuenca", "17": "Girona", "18": "Granada", "19": "Guadalajara", "20": "Gipuzkoa",
+    "21": "Huelva", "22": "Huesca", "23": "Jaén", "24": "León", "25": "Lleida",
+    "26": "La Rioja", "27": "Lugo", "28": "Madrid", "29": "Málaga", "30": "Murcia",
+    "31": "Navarra", "32": "Ourense", "33": "Asturias", "34": "Palencia", "35": "Las Palmas",
+    "36": "Pontevedra", "37": "Salamanca", "38": "Santa Cruz de Tenerife", "39": "Cantabria", "40": "Segovia",
+    "41": "Sevilla", "42": "Soria", "43": "Tarragona", "44": "Teruel", "45": "Toledo",
+    "46": "Valencia", "47": "Valladolid", "48": "Bizkaia", "49": "Zamora", "50": "Zaragoza",
+    "51": "Ceuta", "52": "Melilla"
+}
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -32,21 +38,19 @@ def limpiar_dinero(valor):
     except:
         return None
 
-print("Iniciando Motor Principal DaaS (Blindaje Nacional)...")
+print("Iniciando Motor Principal DaaS (Nacional + Paginación Extrema + Escudo)...")
 sesion = requests.Session()
 sesion.headers.update(HEADERS)
 
+# FASE 1: RASTREO DINÁMICO NACIONAL
+print("\n1. Obteniendo cookies de sesión del BOE...")
+sesion.get(FORM_URL)
+
 datos_brutos_nacionales = []
 
-# --- EL GRAN BUCLE MAESTRO BLINDADO ---
-for provincia_actual in PROVINCIAS_A_RASTREAR:
+for cod_prov, nombre_prov in PROVINCIAS_BOE.items():
+    print(f"\n--- Rastreando Provincia: {nombre_prov} (Código {cod_prov}) ---")
     try:
-        print(f"\n==================================================")
-        print(f"Iniciando rastreo de la provincia código: {provincia_actual}")
-        
-        # Le damos un timeout de 15 segundos para que no se quede colgado infinitamente
-        sesion.get(FORM_URL, timeout=15)
-
         datos_post = [
             ("campo[0]", "SUBASTA.ORIGEN"),                      ("dato[0]", ""),
             ("campo[1]", "SUBASTA.AUTORIDAD"),                   ("dato[1]", ""),
@@ -56,7 +60,7 @@ for provincia_actual in PROVINCIAS_A_RASTREAR:
             ("campo[5]", "BIEN.DIRECCION"),                      ("dato[5]", ""),
             ("campo[6]", "BIEN.CODPOSTAL"),                      ("dato[6]", ""),
             ("campo[7]", "BIEN.LOCALIDAD"),                      ("dato[7]", ""),
-            ("campo[8]", "BIEN.COD_PROVINCIA"),                  ("dato[8]", provincia_actual), 
+            ("campo[8]", "BIEN.COD_PROVINCIA"),                  ("dato[8]", cod_prov),   
             ("campo[9]", "SUBASTA.POSTURA_MINIMA_MINIMA_LOTES"), ("dato[9]", ""),
             ("campo[10]", "SUBASTA.NUM_CUENTA_EXPEDIENTE_1"),    ("dato[10]", ""),
             ("campo[11]", "SUBASTA.NUM_CUENTA_EXPEDIENTE_2"),    ("dato[11]", ""),
@@ -69,7 +73,7 @@ for provincia_actual in PROVINCIAS_A_RASTREAR:
             ("dato[17][0]", ""), ("dato[17][1]", ""),
             ("campo[18]", "SUBASTA.FECHA_INICIO"),
             ("dato[18][0]", ""), ("dato[18][1]", ""),
-            ("page_hits", "500"),
+            ("page_hits", "500"), # ATAQUE 1: Solicitamos hasta 500 expedientes de golpe
             ("sort_field[0]", "SUBASTA.FECHA_FIN"),
             ("sort_order[0]", "asc"),
             ("accion", "Buscar")
@@ -79,20 +83,38 @@ for provincia_actual in PROVINCIAS_A_RASTREAR:
         cabeceras_post["Referer"] = FORM_URL
         cabeceras_post["Origin"] = "https://subastas.boe.es"
 
-        respuesta_post = sesion.post(FORM_URL, data=datos_post, headers=cabeceras_post, timeout=15)
-        sopa_resultados = BeautifulSoup(respuesta_post.text, "html.parser")
+        respuesta = sesion.post(FORM_URL, data=datos_post, headers=cabeceras_post, timeout=15)
+        enlaces_provincia = []
+        
+        while True:
+            sopa = BeautifulSoup(respuesta.text, "html.parser")
+            
+            for a in sopa.select('a[href*="detalleSubasta.php"]'):
+                enlace_completo = urljoin(BASE_URL, a["href"])
+                if enlace_completo not in enlaces_provincia:
+                    enlaces_provincia.append(enlace_completo)
+                    
+            # ATAQUE 2: Detector de paginación blindado (Múltiples comprobaciones)
+            siguiente = sopa.find("a", string=re.compile(r"siguiente", re.I))
+            if not siguiente:
+                siguiente = sopa.find("a", title=re.compile(r"siguiente", re.I))
+            if not siguiente:
+                siguiente = sopa.find(lambda tag: tag.name == "a" and "siguiente" in tag.get_text(strip=True).lower())
+            
+            if not siguiente or not siguiente.get("href"):
+                break 
+                
+            print(f"     Saltando a la página complementaria en {nombre_prov}...")
+            time.sleep(2) 
+            
+            respuesta = sesion.get(urljoin(BASE_URL, siguiente["href"]), headers={"Referer": respuesta.url}, timeout=15)
 
-        enlaces_inmuebles = []
-        for a in sopa_resultados.select('a[href*="detalleSubasta.php"]'):
-            enlace_completo = urljoin(BASE_URL, a["href"])
-            if enlace_completo not in enlaces_inmuebles:
-                enlaces_inmuebles.append(enlace_completo)
-
-        print(f"-> {len(enlaces_inmuebles)} subastas localizadas.")
-
-        if len(enlaces_inmuebles) > 0:
-            for i, enlace in enumerate(enlaces_inmuebles, 1):
-                res_detalle = sesion.get(enlace, headers={"Referer": respuesta_post.url}, timeout=15)
+        print(f"-> Total enlaces localizados en {nombre_prov}: {len(enlaces_provincia)}")
+        
+        # FASE 2: EXTRACCIÓN AL DETALLE (Bisturí enriquecido)
+        if len(enlaces_provincia) > 0:
+            for i, enlace in enumerate(enlaces_provincia, 1):
+                res_detalle = sesion.get(enlace, headers={"Referer": respuesta.url}, timeout=15)
                 sopa_detalle = BeautifulSoup(res_detalle.text, "html.parser")
                 
                 filas = sopa_detalle.find_all("tr")
@@ -104,7 +126,7 @@ for provincia_actual in PROVINCIAS_A_RASTREAR:
                         inmueble[titulo.text.strip()] = valor.text.strip()
                         
                 datos_brutos_nacionales.append({
-                    "Provincia_Codigo": provincia_actual,
+                    "Provincia": nombre_prov,
                     "Identificador": inmueble.get("Identificador", "No disponible"),
                     "Origen": inmueble.get("Tipo de subasta", "No disponible"),
                     "Bien_Tipo": inmueble.get("Bien", inmueble.get("Tipo de bien", "No disponible")),
@@ -115,17 +137,16 @@ for provincia_actual in PROVINCIAS_A_RASTREAR:
                     "Deposito": inmueble.get("Importe del depósito", "No disponible"),
                     "URL_Original": enlace
                 })
-                time.sleep(2)  
+                time.sleep(1)
                 
-    except Exception as error_servidor:
-        # ESCUDO ANTI-CAÍDAS: Si el BOE falla, informamos y pasamos a la siguiente provincia
-        print(f"!!! Error de conexión en la provincia {provincia_actual}: {error_servidor}")
-        print("Saltando a la siguiente provincia para no perder los datos recolectados...")
+        time.sleep(3) 
         
-    print(f"Pausa táctica de 5s...")
-    time.sleep(5) 
+    except Exception as error_servidor:
+        print(f"!!! Error de conexión en {nombre_prov}: {error_servidor}")
+        print("Saltando a la siguiente provincia para no perder los datos...")
+        time.sleep(3)
 
-# --- FASE 3: REFINERÍA Y EMPAQUETADO FINAL ---
+# FASE 3: REFINERÍA Y EMPAQUETADO FINAL
 print("\n3. Limpiando datos con Pandas y exportando JSON nacional...")
 
 if len(datos_brutos_nacionales) > 0:
@@ -139,4 +160,4 @@ if len(datos_brutos_nacionales) > 0:
     df_limpio.to_json("subastas_nacionales.json", orient="records", force_ascii=False, indent=4)
     print(f"¡PIPELINE NACIONAL COMPLETADO! Base de datos generada con {len(df_limpio)} expedientes totales.")
 else:
-    print("El rastreo no obtuvo enlaces válidos en ninguna provincia.") 
+    print("El rastreo no obtuvo enlaces válidos en ninguna provincia hoy.")  
