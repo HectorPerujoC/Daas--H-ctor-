@@ -82,7 +82,7 @@ def buscar_subastas(
         resultados = [s for s in resultados if prov_busqueda in normalizar(s.get("Provincia", "")) or prov_busqueda in normalizar(str(s))]
 
     # 6. Ordenación Dinámica
-   reverso = True if orden.lower() == "desc" else False
+    reverso = True if orden.lower() == "desc" else False
 
     if ordenar_por.lower() == "deposito":
         resultados = sorted(resultados, key=lambda x: (x.get("Deposito_Num") or float('inf')), reverse=reverso)
