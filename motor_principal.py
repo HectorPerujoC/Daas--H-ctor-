@@ -1,6 +1,6 @@
 """
 Rastreador de subastas inmobiliarias del BOE -> SQLite + JSON
-Versión Definitiva: Paginación + Troceado + Extracción Profunda + Exportación API
+Versión Definitiva: Paginación + Troceado + Extracción Profunda + Histórico Inmutable + Exportación API
 """
 import os
 import re
@@ -217,6 +217,8 @@ def guardar_subasta(sesion, cursor, enlace, nombre_prov, fecha_hoy):
 
     cursor.execute("SELECT Identificador FROM subastas WHERE Identificador = ?", (identificador,))
     if cursor.fetchone():
+        # Actualizamos los datos variables y Fecha_Captura (Última vez vista),
+        # manteniendo Fecha_Primera_Captura intacta para saber cuándo nació la subasta.
         cursor.execute("""
             UPDATE subastas
             SET Bien_Tipo = ?, Localidad = ?, Fecha_Fin = ?, Fecha_Captura = ?
@@ -226,14 +228,14 @@ def guardar_subasta(sesion, cursor, enlace, nombre_prov, fecha_hoy):
 
     cursor.execute("""
         INSERT INTO subastas (Identificador, Provincia, Origen, Bien_Tipo, Localidad, Fecha_Fin,
-                              Valor_Num, Deposito_Num, URL_Original, Fecha_Captura)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              Valor_Num, Deposito_Num, URL_Original, Fecha_Captura, Fecha_Primera_Captura)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (identificador, nombre_prov, origen, bien_tipo, localidad, fecha_fin,
-          valor_num, deposito_num, enlace, fecha_hoy))
+          valor_num, deposito_num, enlace, fecha_hoy, fecha_hoy))
     return "nuevo"
 
 def main():
-    print("Iniciando Motor Principal DaaS (Paginación + Fechas + Bisturí + Exportador JSON)...")
+    print("Iniciando Motor Principal DaaS (Paginación + Fechas + Bisturí + Histórico + Exportador JSON)...")
     sesion = requests.Session()
     sesion.headers.update(HEADERS)
     sesion.get(FORM_URL, timeout=30)
@@ -251,9 +253,18 @@ def main():
             Valor_Num REAL,
             Deposito_Num REAL,
             URL_Original TEXT,
-            Fecha_Captura TEXT
+            Fecha_Captura TEXT,
+            Fecha_Primera_Captura TEXT
         )
     ''')
+
+    # Migración segura: añade Fecha_Primera_Captura a tu base de datos actual sin borrar los 988 registros
+    try:
+        cursor.execute("ALTER TABLE subastas ADD COLUMN Fecha_Primera_Captura TEXT")
+        cursor.execute("UPDATE subastas SET Fecha_Primera_Captura = Fecha_Captura WHERE Fecha_Primera_Captura IS NULL")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
 
     fecha_hoy = datetime.now().strftime("%Y-%m-%d")
     nuevos_registros = 0
@@ -269,7 +280,7 @@ def main():
                 time.sleep(3)
                 continue
 
-            print(f"    Total en {nombre_prov}: {len(enlaces)} expedientes. Leyendo fichas...")
+            print(f"     Total en {nombre_prov}: {len(enlaces)} expedientes. Leyendo fichas...")
 
             for enlace in enlaces:
                 try:
